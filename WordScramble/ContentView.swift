@@ -16,12 +16,15 @@ struct ContentView: View {
     @State private var errorMessage = ""
     @State private var showingError = false
     
+    
     var body: some View {
         NavigationStack{
             List {
                 Section {
                     TextField("Enter your word", text: $newWord)
                         .textInputAutocapitalization(.never)
+                        
+                        
                 }
                 
                 Section {
@@ -37,6 +40,7 @@ struct ContentView: View {
             .navigationTitle(rootWord)
             .onSubmit(addNewWord)
             .onAppear(perform: startGame)
+            
             // standard way:
 //            .alert(errorTitle, isPresented: $showingError) {
 //                Button("OK") {}
@@ -48,9 +52,12 @@ struct ContentView: View {
             .alert(errorTitle, isPresented: $showingError) { } message: {
                 Text(errorMessage)
             }
+            .toolbar{
+                Button("New Word", action: startGame)
+                }
             
         }
-                   
+        
     }
     
     func addNewWord() {
@@ -74,6 +81,15 @@ struct ContentView: View {
             return
         }
         
+        guard isLongEnough(word: answer) else {
+            wordError(title: "Word length issue", message: "Your word must have at least three letters!")
+            return
+        }
+        
+        guard isNotStartWord(word: answer) else {
+            wordError(title: "Word originality issue", message: "Don't use the start word!")
+            return
+        }
         
         withAnimation {
             usedWords.insert(answer, at: 0) // at: 0 puts last entry at top of the list
@@ -88,9 +104,11 @@ struct ContentView: View {
             if let startWords = try? String(contentsOf: startWordsURL) {
                 let allWords = startWords.components(separatedBy: "\n")
                 rootWord = allWords.randomElement() ?? "silkworm"
+                
                 return
             }
         }
+        
         
         fatalError("Could not load start.txt from bundle.")
     }
@@ -121,6 +139,26 @@ struct ContentView: View {
         let misspelledRange = checker.rangeOfMisspelledWord(in: word, range: range, startingAt: 0, wrap: false, language: "en")
         
         return misspelledRange.location == NSNotFound
+    }
+    
+    func isLongEnough(word: String) -> Bool {
+        let length = word.utf16.count
+        
+        if (length >= 3) {
+            return true
+        } else {
+            return false
+        }
+    }
+    
+    func isNotStartWord(word: String) -> Bool {
+        var tempWord = rootWord
+        
+        if(word.caseInsensitiveCompare(tempWord) == .orderedSame){
+            return false
+        } else {
+            return true
+        }
     }
     
     func wordError(title: String, message: String) {
